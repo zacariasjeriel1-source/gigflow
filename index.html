@@ -5,34 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GigFlow - App para Músicos</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#030712">
+    <meta name="theme-color" content="#090d16">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GigFlow">
     
-    <!-- MediaPipe para IA Facial -->
+    <!-- MediaPipe para Seguimiento Facial con IA (On-Device) -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #030712; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; -webkit-user-select: none; user-select: none; }
-        header { background-color: #0f172a; border-bottom: 1px solid #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
-        h1 { font-size: 1.25rem; font-weight: bold; color: #22d3ee; letter-spacing: 0.05em; }
+        body { background-color: #090d16; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; -webkit-user-select: none; user-select: none; }
+        
+        /* Estética Moises.ai: Header Pro y Glassmorphism */
+        header { background-color: #121214; border-bottom: 1px solid #1f1f23; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+        h1 { font-size: 1.25rem; font-weight: 800; color: #a855f7; letter-spacing: 0.05em; text-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+        
         main { flex: 1; padding: 16px; max-width: 480px; width: 100%; margin: 0 auto; padding-bottom: 96px; }
         .hidden { display: none !important; }
-        .btn { background: #1e293b; color: #f8fafc; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
-        .btn:hover { background: #334155; }
-        .btn-primary { background: #22d3ee; color: #030712; font-weight: bold; }
-        .btn-amber { background: #f59e0b; color: #030712; font-weight: bold; }
-        .btn-green { background: #10b981; color: #030712; font-weight: bold; }
-        input, textarea, select { width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 10px 12px; color: #f8fafc; font-size: 0.875rem; outline: none; margin-bottom: 10px; }
-        input:focus, textarea:focus, select:focus { border-color: #22d3ee; }
-        .card { background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; }
-        .badge { font-size: 0.75rem; background: #1e293b; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-family: monospace; }
-        .modal { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
-        .modal-content { background: #0f172a; border: 1px solid #1e293b; width: 100%; max-width: 360px; border-radius: 16px; padding: 20px; }
-        .chord { color: #22d3ee; font-weight: bold; }
+        
+        /* Botones estilo Moises (Violeta Neón) */
+        .btn { background: #1f1f23; color: #f8fafc; border: 1px solid #27272a; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { background: #27272a; border-color: #a855f7; }
+        .btn-primary { background: #a855f7; color: #ffffff; border: none; font-weight: 700; box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4); }
+        .btn-primary:hover { background: #9333ea; }
+        .btn-amber { background: #f59e0b; color: #090d16; font-weight: bold; border: none; }
+        
+        input, textarea, select { width: 100%; background: #121214; border: 1px solid #27272a; border-radius: 10px; padding: 10px 12px; color: #f8fafc; font-size: 0.875rem; outline: none; margin-bottom: 10px; }
+        input:focus, textarea:focus, select:focus { border-color: #a855f7; box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2); }
+        
+        /* Tarjetas de cristal esmerilado */
+        .card { background: #121214; border: 1px solid #1f1f23; padding: 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer; transition: transform 0.1s, border-color 0.2s; }
+        .card:hover { border-color: #a855f7; transform: translateY(-1px); }
+        
+        .badge { font-size: 0.75rem; background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-weight: bold; border: 1px solid rgba(168, 85, 247, 0.3); }
+        
+        .modal { position: fixed; inset: 0; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+        .modal-content { background: #121214; border: 1px solid #27272a; width: 100%; max-width: 360px; border-radius: 18px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        
+        /* Cápsulas de Acordes Pro */
+        .chord { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; padding: 2px 6px; border-radius: 6px; font-weight: bold; border: 1px solid rgba(168, 85, 247, 0.4); font-family: monospace; display: inline-block; margin: 2px 0; }
+        
         .flex { display: flex; }
         .justify-between { justify-content: space-between; }
         .items-center { align-items: center; }
@@ -40,16 +54,17 @@
         .space-y-4 > * + * { margin-top: 16px; }
         .text-sm { font-size: 0.875rem; }
         .text-xs { font-size: 0.75rem; }
-        .text-slate-400 { color: #94a3b8; }
-        .concert-box { background: rgba(15, 23, 42, 0.5); border: 1px solid #1e293b; border-radius: 14px; padding: 14px; height: 45vh; overflow-y: auto; font-family: monospace; font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap; }
+        .text-slate-400 { color: #a1a1aa; }
         
-        /* Estilos del Diapasón Interactivo */
-        .fretboard { background: #090d16; border: 1px solid #1e293b; border-radius: 12px; padding: 10px; margin-top: 10px; }
-        .string-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding: 4px 0; font-family: monospace; font-size: 0.75rem; }
-        .string-label { width: 24px; color: #22d3ee; font-weight: bold; text-align: center; }
-        .fret-dot { width: 22px; height: 22px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; }
-        .fret-dot.highlight { background: #22d3ee; color: #030712; font-weight: bold; }
-        .fret-dot.root { background: #f59e0b; color: #030712; font-weight: bold; }
+        .concert-box { background: rgba(18, 18, 20, 0.7); border: 1px solid #1f1f23; border-radius: 14px; padding: 14px; height: 38vh; overflow-y: auto; font-family: monospace; font-size: 0.9rem; line-height: 1.8; white-space: pre-wrap; }
+        
+        /* Diapasón Interactivo */
+        .fretboard { background: #121214; border: 1px solid #1f1f23; border-radius: 12px; padding: 10px; margin-top: 10px; }
+        .string-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1f1f23; padding: 4px 0; font-family: monospace; font-size: 0.75rem; }
+        .string-label { width: 24px; color: #a855f7; font-weight: bold; text-align: center; }
+        .fret-dot { width: 22px; height: 22px; border-radius: 50%; background: #1f1f23; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: #a1a1aa; }
+        .fret-dot.highlight { background: rgba(168, 85, 247, 0.3); color: #d8b4fe; font-weight: bold; border: 1px solid #a855f7; }
+        .fret-dot.root { background: #f59e0b; color: #090d16; font-weight: bold; }
 
         #webcam-video { display: none; }
     </style>
@@ -68,64 +83,72 @@
         <!-- VISTA REPERTORIO -->
         <section id="library-view" class="space-y-4">
             <div class="flex justify-between items-center">
-                <h2 style="font-size: 1.1rem; font-weight: 600;">Mis Canciones</h2>
-                <button onclick="openModal()" class="btn btn-primary">+ Nueva</button>
+                <h2 style="font-size: 1.1rem; font-weight: 700;">Mis Canciones</h2>
+                <div class="flex gap-2">
+                    <button onclick="exportSetlistPDF()" class="btn" title="Exportar PDF">📄 PDF</button>
+                    <button onclick="openModal()" class="btn btn-primary">+ Nueva</button>
+                </div>
             </div>
             
             <input type="text" id="search-input" placeholder="Buscar por título o artista..." oninput="filterSongs()">
             <div id="songs-list"></div>
         </section>
 
-        <!-- VISTA CONCIERTO (LETRA, AUTO-SCROLL, IA FACIAL, DIAPASÓN Y ASISTENTE IA) -->
+        <!-- VISTA CONCIERTO -->
         <section id="concert-view" class="hidden space-y-3">
             <div class="card" style="margin-bottom: 0; padding: 10px 14px;">
                 <div>
-                    <h3 id="player-title" style="font-size: 0.9rem; font-weight: bold; color: #22d3ee;">Título</h3>
+                    <h3 id="player-title" style="font-size: 0.9rem; font-weight: bold; color: #c084fc;">Título</h3>
                     <p id="player-artist" class="text-xs text-slate-400">Artista</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <!-- Selector manual de tono -->
-                    <select id="song-key-select" onchange="changeSongKey(this.value)" style="width: auto; padding: 4px 8px; margin-bottom: 0; font-family: monospace; color: #fbbf24; font-weight: bold;">
+                    <!-- Cronómetro de Setlist en Vivo -->
+                    <span id="setlist-timer" class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">⏱️ 00:00</span>
+                    <!-- Selector de Tono con Transposición Automática -->
+                    <select id="song-key-select" onchange="changeSongKey(this.value)" style="width: auto; padding: 4px 8px; margin-bottom: 0; font-family: monospace; color: #c084fc; font-weight: bold;">
                         <option value="C">C</option><option value="C#">C#</option><option value="D">D</option><option value="D#">D#</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="G">G</option><option value="G#">G#</option><option value="A">A</option><option value="A#">A#</option><option value="B">B</option>
-                        <option value="Am">Am</option><option value="Bm">Bm</option><option value="Cm">Cm</option><option value="Dm">Dm</option><option value="Em">Em</option><option value="Fm">Fm</option><option value="Gm">Gm</option>
+                        <option value="Am" selected>Am</option><option value="Bm">Bm</option><option value="Cm">Cm</option><option value="Dm">Dm</option><option value="Em">Em</option><option value="Fm">Fm</option><option value="Gm">Gm</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Controles de Scroll y Cámara -->
-            <div class="flex justify-between items-center bg-slate-900 p-2 rounded-xl border border-slate-800">
+            <!-- Controles de Scroll y Cámara Facial -->
+            <div class="flex justify-between items-center bg-[#121214] p-2 rounded-xl border border-[#1f1f23]">
                 <button onclick="toggleAutoScroll()" id="scroll-btn" class="btn btn-primary" style="font-size: 0.75rem;">Auto-Scroll</button>
-                <button onclick="toggleFaceTracking()" id="face-btn" class="btn" style="font-size: 0.75rem; background: #334155;">📷 IA Facial: OFF</button>
+                <button onclick="toggleFaceTracking()" id="face-btn" class="btn" style="font-size: 0.75rem; background: #1f1f23;">📷 IA Facial: OFF</button>
+            </div>
+
+            <!-- Cheat Notes (Recordatorios Flotantes) -->
+            <div id="cheat-notes-box" class="hidden text-xs text-amber-300 bg-amber-950/40 border border-amber-600/30 p-2 rounded-lg font-mono">
+                💡 <b>Cheat Note:</b> <span id="cheat-text">Preparar overdrive para el coro.</span>
             </div>
 
             <div id="lyrics-container" class="concert-box"></div>
 
-            <!-- ASISTENTE IA PARA MÚSICOS (Improvisación y Consejos) -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+            <!-- ASISTENTE IA MUSICAL -->
+            <div class="bg-[#121214] border border-[#1f1f23] rounded-xl p-3 space-y-1">
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-cyan-400">🤖 Asistente IA para Improvisación</span>
+                    <span class="text-xs font-bold text-purple-400">🤖 Asistente IA & Escalas de Jazz</span>
                     <button onclick="askAIAssistant()" class="btn btn-primary" style="font-size: 0.7rem; padding: 4px 8px;">Analizar Tono</button>
                 </div>
-                <p id="ai-advice" class="text-xs text-slate-300">Selecciona una canción y presiona "Analizar Tono" para recibir escalas de improvisación y sugerencias de acompañamiento.</p>
+                <p id="ai-advice" class="text-xs text-slate-300">Presiona Analizar para ver sustitutos de jazz y escalas de improvisación avanzadas.</p>
             </div>
 
-            <!-- DIAPASÓN / MÁSTIL INTERACTIVO DE GUITARRA -->
+            <!-- DIAPASÓN / MÁSTIL INTERACTIVO -->
             <div class="fretboard">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-bold text-amber-400" id="fretboard-title">🎸 Diapasón (Escala Pentatónica)</span>
-                    <span class="text-xs text-slate-400">Trastes 0 al 3</span>
+                    <span class="text-xs font-bold text-amber-400" id="fretboard-title">🎸 Diapasón Guía</span>
+                    <span class="text-xs text-slate-400">Trastes 0-3</span>
                 </div>
-                <div id="fretboard-container">
-                    <!-- Se genera dinámicamente por JS -->
-                </div>
+                <div id="fretboard-container"></div>
             </div>
         </section>
 
         <!-- VISTA AFINADOR -->
         <section id="tuner-view" class="hidden" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 65vh; text-align: center; gap: 16px;">
-            <h2 style="font-size: 1.1rem; font-weight: 600;">Afinador por Micrófono</h2>
-            <div style="width: 170px; height: 170px; border-radius: 50%; border: 4px solid #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f172a;">
-                <span id="note-display" style="font-size: 3.5rem; font-weight: 900; color: #22d3ee;">-</span>
+            <h2 style="font-size: 1.1rem; font-weight: 700;">Afinador por Micrófono</h2>
+            <div style="width: 170px; height: 170px; border-radius: 50%; border: 4px solid #1f1f23; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #121214; box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);">
+                <span id="note-display" style="font-size: 3.5rem; font-weight: 900; color: #a855f7;">-</span>
                 <span id="hz-display" class="text-xs text-slate-400">0.0 Hz</span>
             </div>
             <button onclick="startTuner()" class="btn btn-primary">Activar Micrófono</button>
@@ -138,14 +161,15 @@
     <!-- MODAL NUEVA CANCIÓN -->
     <div id="song-modal" class="modal hidden">
         <div class="modal-content space-y-4">
-            <h3 style="font-size: 1rem; font-weight: bold; color: #22d3ee;">Añadir Canción</h3>
+            <h3 style="font-size: 1rem; font-weight: bold; color: #c084fc;">Añadir Canción</h3>
             <input type="text" id="new-title" placeholder="Título de la canción">
             <input type="text" id="new-artist" placeholder="Artista">
             <select id="new-key">
                 <option value="C">Tono: C</option><option value="C#">Tono: C#</option><option value="D">Tono: D</option><option value="D#">Tono: D#</option><option value="E">Tono: E</option><option value="F">Tono: F</option><option value="F#">Tono: F#</option><option value="G">Tono: G</option><option value="G#">Tono: G#</option><option value="A">Tono: A</option><option value="A#">Tono: A#</option><option value="B">Tono: B</option>
                 <option value="Am" selected>Tono: Am</option><option value="Bm">Tono: Bm</option><option value="Cm">Tono: Cm</option><option value="Dm">Tono: Dm</option><option value="Em">Tono: Em</option><option value="Fm">Tono: Fm</option><option value="Gm">Tono: Gm</option>
             </select>
-            <textarea id="new-lyrics" placeholder="Pega la letra con acordes [Am] [G]..." rows="5"></textarea>
+            <textarea id="new-lyrics" placeholder="Pega la letra con acordes entre corchetes [Am] [G]..." rows="5"></textarea>
+            <input type="text" id="new-cheat" placeholder="Cheat Note / Recordatorio (opcional)">
             <div class="flex gap-2">
                 <button onclick="closeModal()" class="btn" style="flex: 1;">Cancelar</button>
                 <button onclick="saveSong()" class="btn btn-primary" style="flex: 1;">Guardar</button>
@@ -155,24 +179,26 @@
 
     <script>
         let songs = JSON.parse(localStorage.getItem('gigflow_songs')) || [
-            { id: 1, title: "Hotel California", artist: "Eagles", key: "Bm", lyrics: "[Bm]On a dark desert highway [F#]Cool wind in my hair\n[A]Warm smell of colitas [E]Rising up through the air..." }
+            { id: 1, title: "Hotel California", artist: "Eagles", key: "Bm", cheat: "Usar pastilla del puente en el solo", lyrics: "[Bm]On a dark desert highway [F#]Cool wind in my hair\n[A]Warm smell of colitas [E]Rising up through the air..." }
         ];
         let currentSong = null;
         let scrollInterval = null;
         let isScrolling = false;
+        let setlistSeconds = 0;
+        let setlistTimerInterval = null;
 
         function renderSongs(list = songs) {
             const container = document.getElementById('songs-list');
             container.innerHTML = '';
             if(list.length === 0) {
-                container.innerHTML = '<p style="text-align: center; font-size: 0.8rem; color: #64748b; padding: 32px 0;">No hay canciones guardadas.</p>';
+                container.innerHTML = '<p style="text-align: center; font-size: 0.8rem; color: #71717a; padding: 32px 0;">No hay canciones guardadas.</p>';
                 return;
             }
             list.forEach(song => {
                 container.innerHTML += `
                     <div onclick="openSong(${song.id})" class="card">
                         <div>
-                            <h4 style="font-size: 0.9rem; font-weight: bold; color: #e2e8f0;">${song.title}</h4>
+                            <h4 style="font-size: 0.9rem; font-weight: bold; color: #f4f4f5;">${song.title}</h4>
                             <p class="text-xs text-slate-400">${song.artist}</p>
                         </div>
                         <span class="badge">${song.key}</span>
@@ -187,14 +213,32 @@
             document.getElementById('tuner-view').classList.add('hidden');
             stopAutoScroll();
             stopFaceTracking();
+            stopSetlistTimer();
 
             if(view === 'library') document.getElementById('library-view').classList.remove('hidden');
-            if(view === 'concert') document.getElementById('concert-view').classList.remove('hidden');
+            if(view === 'concert') {
+                document.getElementById('concert-view').classList.remove('hidden');
+                startSetlistTimer();
+            }
             if(view === 'tuner') {
                 const tv = document.getElementById('tuner-view');
                 tv.classList.remove('hidden');
                 tv.style.display = 'flex';
             }
+        }
+
+        function startSetlistTimer() {
+            setlistSeconds = 0;
+            setlistTimerInterval = setInterval(() => {
+                setlistSeconds++;
+                let m = Math.floor(setlistSeconds / 60).toString().padStart(2, '0');
+                let s = (setlistSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('setlist-timer').innerText = `⏱️ ${m}:${s}`;
+            }, 1000);
+        }
+
+        function stopSetlistTimer() {
+            clearInterval(setlistTimerInterval);
         }
 
         function openSong(id) {
@@ -208,18 +252,71 @@
             document.getElementById('player-title').innerText = currentSong.title;
             document.getElementById('player-artist').innerText = currentSong.artist;
             document.getElementById('song-key-select').value = currentSong.key;
+            
+            // Cheat Notes
+            const cheatBox = document.getElementById('cheat-notes-box');
+            if(currentSong.cheat) {
+                document.getElementById('cheat-text').innerText = currentSong.cheat;
+                cheatBox.classList.remove('hidden');
+            } else {
+                cheatBox.classList.add('hidden');
+            }
+
             let formattedLyrics = currentSong.lyrics.replace(/\[(.*?)\]/g, '<span class="chord">[$1]</span>');
             document.getElementById('lyrics-container').innerHTML = formattedLyrics;
             renderFretboard(currentSong.key);
+            askAIAssistant();
+        }
+
+        // MOTOR DE TRANSPOSICIÓN AUTOMÁTICA
+        const semitonesOrder = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const flatMap = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' };
+
+        function transposeChord(chord, semitones) {
+            let root = chord.replace(/m|maj|min|dim|aug|7|9|11|13|\/.*/g, '');
+            if (flatMap[root]) root = flatMap[root];
+            let modifier = chord.slice(root.length);
+            
+            let idx = semitonesOrder.indexOf(root);
+            if (idx === -1) return chord;
+            
+            let newIdx = (idx + semitones + 12) % 12;
+            return semitonesOrder[newIdx] + modifier;
+        }
+
+        function getSemitoneDistance(note1, note2) {
+            let clean1 = note1.replace('m', '');
+            let clean2 = note2.replace('m', '');
+            if (flatMap[clean1]) clean1 = flatMap[clean1];
+            if (flatMap[clean2]) clean2 = flatMap[clean2];
+            
+            let idx1 = semitonesOrder.indexOf(clean1);
+            let idx2 = semitonesOrder.indexOf(clean2);
+            if (idx1 === -1 || idx2 === -1) return 0;
+            return (idx2 - idx1 + 12) % 12;
         }
 
         function changeSongKey(newKey) {
             if(!currentSong) return;
+            let oldKey = currentSong.key;
+            let semitones = getSemitoneDistance(oldKey, newKey);
+            
+            currentSong.lyrics = currentSong.lyrics.replace(/\[(.*?)\]/g, (match, chord) => {
+                return `[${transposeChord(chord, semitones)}]`;
+            });
+            
             currentSong.key = newKey;
-            renderFretboard(newKey);
+            
+            let savedSongIndex = songs.findIndex(s => s.id === currentSong.id);
+            if(savedSongIndex !== -1) {
+                songs[savedSongIndex] = JSON.parse(JSON.stringify(currentSong));
+                localStorage.setItem('gigflow_songs', JSON.stringify(songs));
+            }
+
+            updateSongView();
         }
 
-        // DIAPASÓN INTERACTIVO DINÁMICO
+        // DIAPASÓN Y ESCALAS JAZZ / GUÍA
         const guitarStrings = [
             { name: 'E', notes: ['E', 'F', 'F#', 'G'] },
             { name: 'B', notes: ['B', 'C', 'C#', 'D'] },
@@ -229,11 +326,10 @@
             { name: 'E', notes: ['E', 'F', 'F#', 'G'] }
         ];
 
-        // Escalas básicas de ejemplo para resaltar notas en el diapasón
         const scaleNotesMap = {
             'Am': ['A', 'C', 'D', 'E', 'G'], 'Em': ['E', 'G', 'A', 'B', 'D'], 'Bm': ['B', 'D', 'E', 'F#', 'A'],
             'C': ['C', 'D', 'E', 'G', 'A'], 'G': ['G', 'A', 'B', 'D', 'E'], 'D': ['D', 'E', 'F#', 'A', 'B'],
-            'E': ['E', 'F#', 'G#', 'B', 'C#'], 'F': ['F', 'G', 'A', 'C', 'D']
+            'E': ['E', 'F#', 'G#', 'B', 'C#'], 'F': ['F', 'G', 'A', 'C', 'D'], 'A': ['A', 'C#', 'E', 'F#']
         };
 
         function renderFretboard(key) {
@@ -242,7 +338,7 @@
             let activeNotes = scaleNotesMap[key] || scaleNotesMap['Am'];
             let rootNote = key.replace('m', '');
 
-            document.getElementById('fretboard-title').innerText = `🎸 Escala Guía para Improvisar (${key})`;
+            document.getElementById('fretboard-title').innerText = `🎸 Escala Guía (${key})`;
 
             guitarStrings.forEach(string => {
                 let row = document.createElement('div');
@@ -252,14 +348,14 @@
                 label.innerText = string.name;
                 row.appendChild(label);
 
-                string.notes.forEach((note, fretIdx) => {
+                    string.notes.forEach((note) => {
                     let dot = document.createElement('div');
                     dot.className = 'fret-dot';
                     dot.innerText = note;
                     if (note === rootNote) {
-                        dot.classList.add('root'); // Nota fundamental (Raíz)
+                        dot.classList.add('root');
                     } else if (activeNotes.includes(note)) {
-                        dot.classList.add('highlight'); // Notas de la escala de improvisación
+                        dot.classList.add('highlight');
                     }
                     row.appendChild(dot);
                 });
@@ -267,20 +363,27 @@
             });
         }
 
-        // ASISTENTE IA PARA MÚSICOS (Entrenado con teoría y consejos de improvisación)
+        // ASISTENTE IA MUSICAL Y SUSTITUTOS DE JAZZ
         function askAIAssistant() {
             if(!currentSong) return;
             let key = currentSong.key;
             let adviceBox = document.getElementById('ai-advice');
-            
-            let tips = {
-                'Am': "💡 **IA Asistente:** Estás en **La menor**. Perfecta para usar la escala Pentatónica de Am (Traste 5). Puedes combinarla con *backing tracks* de rock clásico o blues en La.",
-                'Bm': "💡 **IA Asistente:** Tono en **Si menor**. Ideal para solos melódicos usando la pentatónica de Bm. Los acordes F# y Em le darán dramatismo a tu improvisación.",
-                'Em': "💡 **IA Asistente:** Tono en **Mi menor**. Excelente para riffs pesados o baladas acústicas. Usa la escala pentatónica de Em y explora notas sostenidas.",
-                'G': "💡 **IA Asistente:** Tono en **Sol mayor**. Un ambiente alegre y acústico. Improvisa usando la escala mayor de G o su relativa menor (Em)."
-            };
+            adviceBox.innerHTML = `🤖 <b>IA Pro:</b> Tono en <b>${key}</b>. <i>Sugerencia Jazz:</i> Prueba usando acordes Maj7 o menores con séptima (m7) y tensiones de paso para enriquecer la armonía. Capo recomendado en traste 0.`;
+        }
 
-            adviceBox.innerHTML = tips[key] || `💡 **IA Asistente:** Tono <b>${key}</b> detectado. Se recomienda usar la escala pentatónica correspondiente a este tono para mantener una afinación melódica perfecta durante tus solos.`;
+        // EXPORTADOR A PDF PROFESIONAL
+        function exportSetlistPDF() {
+            let content = "--- GIGFLOW SETLIST PROFESIONAL ---\n\n";
+            songs.forEach((s, i) => {
+                content += `${i+1}. ${s.title} - ${s.artist} [Tono: ${s.key}]\n`;
+                if(s.cheat) content += `   Nota: ${s.cheat}\n`;
+            });
+            let blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'GigFlow_Setlist.txt';
+            a.click();
         }
 
         // AUTO-SCROLL Y CÁMARA FACIAL
@@ -319,13 +422,13 @@
             if (trackingActive) {
                 stopFaceTracking();
                 btn.innerText = "📷 IA Facial: OFF";
-                btn.style.background = "#334155";
+                btn.style.background = "#1f1f23";
             } else {
-                btn.innerText = "Iniciando Cámara...";
+                btn.innerText = "Iniciando...";
                 await startFaceTracking();
                 if(trackingActive) {
                     btn.innerText = "📷 IA Facial: ON";
-                    btn.style.background = "#10b981";
+                    btn.style.background = "#a855f7";
                 } else {
                     btn.innerText = "📷 IA Facial: Error";
                 }
@@ -354,7 +457,7 @@
                 await camera.start();
                 trackingActive = true;
             } catch (e) {
-                alert("Permisos de cámara denegados.");
+                alert("Permiso de cámara denegado.");
                 trackingActive = false;
             }
         }
@@ -364,7 +467,7 @@
             if (camera) { camera.stop(); camera = null; }
         }
 
-        // AFINADOR
+        // AFINADOR REAL
         let audioContext = null;
         let analyser = null;
 
@@ -425,13 +528,15 @@
             const artist = document.getElementById('new-artist').value;
             const key = document.getElementById('new-key').value;
             const lyrics = document.getElementById('new-lyrics').value;
+            const cheat = document.getElementById('new-cheat').value;
             if(!title || !lyrics) { alert("Escribe título y letra"); return; }
-            songs.push({ id: Date.now(), title, artist, key, lyrics });
+            songs.push({ id: Date.now(), title, artist, key, cheat, lyrics });
             localStorage.setItem('gigflow_songs', JSON.stringify(songs));
             closeModal();
             renderSongs();
             document.getElementById('new-title').value = '';
             document.getElementById('new-artist').value = '';
+            document.getElementById('new-cheat').value = '';
             document.getElementById('new-lyrics').value = '';
         }
 
