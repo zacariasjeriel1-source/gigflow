@@ -108,6 +108,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .mc input,.mc textarea,.mc select{width:100%;background:var(--s2);border:1px solid transparent;border-radius:12px;padding:13px 14px;color:var(--tx);font-size:.95rem;margin-bottom:10px;outline:none}
 .mc input:focus,.mc textarea:focus,.mc select:focus{border-color:var(--ac)}
 .mc textarea{font-family:ui-monospace,Menlo,monospace;font-size:.85rem;resize:vertical}
+.lk{display:flex;gap:8px;margin:2px 0 12px}.lk button{flex:1;padding:11px;border-radius:12px;background:var(--s2);font-size:.8rem;font-weight:650}.capo{display:flex;flex-wrap:wrap;gap:8px}.capo button{padding:9px 12px;border-radius:12px;background:var(--s2);font-size:.78rem;font-weight:650}.capo button.e{outline:1px solid var(--ac)}.capo button.on{background:var(--g);color:#fff}.tip{font-size:.78rem;color:var(--mu);margin-top:8px;line-height:1.45}
 #webcam-video{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -168,6 +169,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="fb" id="fretboard-container"></div>
     <h3>Armonía</h3>
     <p id="ai-advice"></p>
+    <h3>Capo</h3>
+    <div class="capo" id="capo-box"></div>
+    <p class="tip" id="capo-tip"></p>
+    <h3>IA</h3>
+    <div class="lk"><button onclick="aiReharm()">Reharmonizar con IA</button></div>
+    <p class="tip" id="ai-reply" style="white-space:pre-wrap;color:#c9c9d3"></p>
     <div class="act">
       <button onclick="closeSheet();editCurrentSong()">Editar</button>
       <button onclick="resetTranspose();closeSheet()">Tono original</button>
@@ -191,8 +198,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <h3 id="modal-title">Nueva canción</h3>
     <input id="new-title" placeholder="Título">
     <input id="new-artist" placeholder="Artista">
+    <div class="lk"><button onclick="searchWeb('cifraclub')">Buscar en Cifra Club</button><button onclick="searchWeb('lacuerda')">Buscar en La Cuerda</button></div>
     <select id="new-key"></select>
-    <textarea id="new-lyrics" rows="7" placeholder="Letra con acordes entre corchetes:&#10;[Am]Texto de la [G]canción"></textarea>
+    <textarea id="new-lyrics" rows="7" placeholder="Pega aquí la cifra (acordes sobre la letra o entre corchetes)"></textarea>
+    <div class="lk"><button onclick="convertPasted()">✨ Convertir cifra</button><button onclick="aiClean(this)">🤖 Limpiar con IA</button></div>
     <input id="new-cheat" placeholder="Nota rápida (opcional)">
     <div class="act"><button onclick="closeModal()">Cancelar</button><button class="bt pr" onclick="saveSong()">Guardar</button></div>
   </div>
@@ -207,7 +216,7 @@ const IC_PAUSE='<svg class="f" viewBox="0 0 24 24"><rect x="6" y="4" width="4.5"
 const DEFAULT_SONGS=[{id:1,title:"Hotel California",artist:"Eagles",key:"Bm",cheat:"Usar pastilla del puente en el solo",lyrics:"[Bm]On a dark desert highway [F#]Cool wind in my hair\n[A]Warm smell of colitas [E]Rising up through the air..."}];
 function loadSongs(){try{const d=JSON.parse(localStorage.getItem('gigflow_songs'));if(Array.isArray(d))return d}catch(e){}return DEFAULT_SONGS}
 function persist(){try{localStorage.setItem('gigflow_songs',JSON.stringify(songs))}catch(e){alert('No se pudo guardar (almacenamiento lleno o bloqueado).')}}
-let songs=loadSongs(),currentSong=null,playKey=null,editingId=null;
+let songs=loadSongs(),currentSong=null,playKey=null,editingId=null,capo=0;
 
 /* Teoría */
 const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -216,9 +225,13 @@ const KEYS=[...NOTES,'Am','A#m','Bm','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm',
 const noteIdx=n=>NOTES.indexOf(FLATS[n]||n);
 const isMinorKey=k=>/m$/.test(k);
 const keyRoot=k=>k.replace(/m$/,'');
-function transposeChord(ch,n){return ch.split('/').map(p=>{const m=p.match(/^([A-G][#b]?)(.*)$/);if(!m)return p;const i=noteIdx(m[1]);return i<0?p:NOTES[(i+n+120)%12]+m[2]}).join('/')}
+const FLATN=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const useFlats=k=>{const r=keyRoot(k);return isMinorKey(k)?['D','G','C','F','A#','D#'].includes(r):['F','A#','D#','G#','C#'].includes(r)};
+const nn=(i,f)=>(f?FLATN:NOTES)[((i%12)+12)%12];
+const showKey=k=>nn(noteIdx(keyRoot(k)),useFlats(k))+(isMinorKey(k)?'m':'');
+function transposeChord(ch,n,f){return ch.split('/').map(p=>{const m=p.match(/^([A-G][#b]?)(.*)$/);if(!m)return p;const i=noteIdx(m[1]);return i<0?p:nn(i+n,f)+m[2]}).join('/')}
 function semitoneDistance(a,b){const x=noteIdx(keyRoot(a)),y=noteIdx(keyRoot(b));return(x<0||y<0)?0:(y-x+12)%12}
-function transposeLyrics(t,n){return n===0?t:t.replace(/\[(.*?)\]/g,(_,c)=>`[${transposeChord(c,n)}]`)}
+function transposeLyrics(t,n,f){return n===0?t:t.replace(/\[(.*?)\]/g,(_,c)=>`[${transposeChord(c,n,f)}]`)}
 
 /* Letra con acordes encima */
 function renderLyrics(text){
@@ -234,7 +247,7 @@ function renderLyrics(text){
 function coverStyle(t){const h=([...t].reduce((a,c)=>a+c.charCodeAt(0),0)*37)%360;return `background:linear-gradient(135deg,hsl(${h},75%,55%),hsl(${(h+50)%360},75%,42%))`}
 function renderSongs(list=songs){
   const c=$('songs-list');
-  if(!list.length){c.innerHTML='<div class="empty">Aún no hay canciones.<br>Toca el botón + para añadir la primera.</div>';return}
+  if(!list.length){const q=($('search-input').value||'').trim();c.innerHTML=q?`<div class="empty">No hay «${esc(q)}» en tu biblioteca.<div class="lk" style="margin-top:16px"><button onclick="searchFromLibrary('cifraclub')">Cifra Club</button><button onclick="searchFromLibrary('lacuerda')">La Cuerda</button></div><button class="bt pr" style="width:100%;margin-top:4px" onclick="openModal();$('new-title').value=$('search-input').value">Añadir manualmente</button></div>`:'<div class="empty">Aún no hay canciones.<br>Toca el botón + para añadir la primera.</div>';return}
   c.innerHTML=list.map(s=>`<div class="row" onclick="openSong(${Number(s.id)})"><div class="cover" style="${coverStyle(s.title)}">${esc((s.title[0]||'♪').toUpperCase())}</div><div class="rt"><b>${esc(s.title)}</b><span>${esc(s.artist)}</span></div><span class="chip">${esc(s.key)}</span></div>`).join('');
 }
 function filterSongs(){const q=$('search-input').value.toLowerCase();renderSongs(songs.filter(s=>s.title.toLowerCase().includes(q)||(s.artist||'').toLowerCase().includes(q)))}
@@ -271,18 +284,18 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 /* Canción */
 function openSong(id){
   const s=songs.find(x=>x.id===id);if(!s)return;
-  currentSong=s;playKey=s.playKey&&KEYS.includes(s.playKey)?s.playKey:s.key;
+  currentSong=s;capo=0;playKey=s.playKey&&KEYS.includes(s.playKey)?s.playKey:s.key;
   switchView('concert');updateSongView();$('lyrics-container').scrollTop=0;
 }
 function updateSongView(){
   $('player-title').textContent=currentSong.title;$('player-artist').textContent=currentSong.artist;
-  $('key-label').textContent=playKey;
+  $('key-label').textContent=showKey(playKey)+(capo?' · capo '+capo:'');
   const cb=$('cheat-notes-box');
   if(currentSong.cheat){$('cheat-text').textContent=currentSong.cheat;cb.classList.remove('hidden')}else cb.classList.add('hidden');
-  $('lyrics-container').innerHTML=renderLyrics(transposeLyrics(currentSong.lyrics,semitoneDistance(currentSong.key,playKey)));
-  renderFretboard(playKey);askAIAssistant();
+  $('lyrics-container').innerHTML=renderLyrics(transposeLyrics(currentSong.lyrics,(semitoneDistance(currentSong.key,playKey)-capo+12)%12,capo?false:useFlats(playKey)));
+  renderFretboard(playKey);askAIAssistant();renderCapo();
 }
-function changeSongKey(k){if(!currentSong)return;playKey=k;currentSong.playKey=k===currentSong.key?undefined:k;persist();updateSongView()}
+function changeSongKey(k){if(!currentSong)return;capo=0;playKey=k;currentSong.playKey=k===currentSong.key?undefined:k;persist();updateSongView()}
 function shiftKey(d){const r=NOTES[(noteIdx(keyRoot(playKey))+d+12)%12];changeSongKey(r+(isMinorKey(playKey)?'m':''))}
 function resetTranspose(){if(currentSong)changeSongKey(currentSong.key)}
 function deleteCurrentSong(){if(!currentSong||!confirm(`¿Borrar "${currentSong.title}"?`))return;songs=songs.filter(s=>s.id!==currentSong.id);persist();currentSong=null;switchView('library')}
@@ -309,6 +322,79 @@ function askAIAssistant(){
    ?`<b>${playKey}</b> menor natural. Diatónicos: ${n(0)}m7 · ${n(2)}m7b5 · ${n(3)}maj7 · ${n(5)}m7 · ${n(7)}m7 · ${n(8)}maj7 · ${n(10)}7.<br>ii–V–i: ${n(2)}m7b5 – ${n(7)}7(b9) – ${n(0)}m7. Sustituto tritonal de ${n(7)}7: ${n(1)}7.<br>Escalas: eólica o dórica sobre ${n(0)}m7; alterada sobre ${n(7)}7.`
    :`<b>${playKey}</b> mayor. Diatónicos: ${n(0)}maj7 · ${n(2)}m7 · ${n(4)}m7 · ${n(5)}maj7 · ${n(7)}7 · ${n(9)}m7 · ${n(11)}m7b5.<br>ii–V–I: ${n(2)}m7 – ${n(7)}7 – ${n(0)}maj7. Sustituto tritonal de ${n(7)}7: ${n(1)}7.<br>Escalas: jónica sobre ${n(0)}maj7; mixolidia sobre ${n(7)}7; dórica sobre ${n(2)}m7.`;
 }
+
+/* Capo */
+const EASY_MAJ=['C','G','D','A','E'],EASY_MIN=['A','E','D'];
+function capoShape(c){const m=isMinorKey(playKey),r=NOTES[(noteIdx(keyRoot(playKey))-c+120)%12];return{txt:r+(m?'m':''),easy:(m?EASY_MIN:EASY_MAJ).includes(r)}}
+function renderCapo(){
+  const box=$('capo-box');if(!box||!playKey)return;
+  let best=-1;
+  box.innerHTML=[0,1,2,3,4,5,6,7].map(c=>{const s=capoShape(c);if(s.easy&&best<0)best=c;return `<button class="${s.easy?'e':''} ${c===capo?'on':''}" onclick="setCapo(${c})">${c?'Capo '+c:'Sin capo'} → ${s.txt}</button>`}).join('');
+  $('capo-tip').textContent=(best<0?'Ningún capo da formas abiertas fáciles en este tono.':best===0?'En este tono ya tocas con formas abiertas: no necesitas capo.':`Recomendado: capo en el traste ${best} y tocar en ${capoShape(best).txt}.`)+' El contorno morado marca las formas abiertas.';
+}
+function setCapo(c){capo=c;updateSongView()}
+
+/* Cifra pegada → formato [Acorde] */
+const CH=/^[A-G][#b]?(?:maj|min|dim|aug|sus|add|m|M|[0-9]|\+|°|ø|-|b|#|\([^)]*\)|\/[A-G][#b]?)*$/;
+const isChordLine=l=>l.trim()!==''&&l.trim().split(/\s+/).every(x=>CH.test(x));
+function convertChordSheet(text){
+  const L=text.replace(/\r/g,'').split('\n'),out=[];
+  for(let i=0;i<L.length;i++){
+    const l=L[i],sec=l.match(/^\s*\[([^\]]+)\]\s*:?\s*$/);
+    if(sec&&!CH.test(sec[1].trim())){out.push('('+sec[1].trim()+')');continue}
+    if(/\[/.test(l)){out.push(l);continue}
+    if(isChordLine(l)){
+      const n=L[i+1];
+      if(n!==undefined&&n.trim()!==''&&!isChordLine(n)&&!/^\s*\[/.test(n)){
+        let lyr=n;const ms=[...l.matchAll(/\S+/g)];
+        for(let k=ms.length-1;k>=0;k--){const p=ms[k].index;if(lyr.length<p)lyr=lyr.padEnd(p);lyr=lyr.slice(0,p)+'['+ms[k][0]+']'+lyr.slice(p)}
+        out.push(lyr.replace(/\s+$/,''));i++;
+      }else out.push(l.trim().split(/\s+/).map(x=>'['+x+']').join(' '));
+      continue;
+    }
+    out.push(l);
+  }
+  return out.join('\n');
+}
+function convertPasted(){
+  const t=$('new-lyrics');t.value=convertChordSheet(t.value);
+  const m=t.value.match(/\[([A-G][#b]?)(m(?!aj))?/);
+  if(m){const k=(FLATS[m[1]]||m[1])+(m[2]?'m':'');if(KEYS.includes(k))$('new-key').value=k}
+}
+
+/* IA (Claude a través de tu Worker) */
+function aiUrl(){let u=localStorage.getItem('gigflow_ai_url');if(!u){u=(prompt('Pega la URL de tu Worker de IA (Cloudflare):')||'').trim();if(u)localStorage.setItem('gigflow_ai_url',u)}return u}
+async function askAI(system,prompt){
+  const u=aiUrl();if(!u)throw new Error('falta la URL del Worker');
+  const r=await fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({system,prompt})});
+  if(!r.ok)throw new Error('respuesta '+r.status);
+  return (await r.json()).text||'';
+}
+async function aiClean(btn){
+  const t=$('new-lyrics');if(!t.value.trim()){alert('Pega primero la cifra.');return}
+  const old=btn.textContent;btn.textContent='Pensando…';btn.disabled=true;
+  try{
+    const out=await askAI('Eres un asistente para músicos. Recibes una cifra pegada desde una web (acordes sobre la letra, publicidad, etiquetas). Devuelve SOLO la cifra limpia: cada acorde entre corchetes justo antes de la sílaba donde cambia, por ejemplo [Am]Hola [G]mundo. Las secciones como (Intro) o (Coro) en su propia línea. Quita todo lo que no sea letra o acordes. No añadas comentarios ni bloques de código. Conserva la letra tal cual, sin corregirla ni inventarla.',t.value);
+    t.value=out.trim();convertPasted();
+  }catch(e){alert('No se pudo usar la IA: '+e.message)}
+  btn.textContent=old;btn.disabled=false;
+}
+async function aiReharm(){
+  if(!currentSong)return;const el=$('ai-reply');el.textContent='Pensando…';
+  try{
+    const txt=transposeLyrics(currentSong.lyrics,(semitoneDistance(currentSong.key,playKey)-capo+12)%12,capo?false:useFlats(playKey));
+    el.textContent=await askAI('Eres un profesor de armonía jazz y funk para guitarristas. Responde en español, breve (máximo 8 líneas), con acordes concretos.','Tono: '+showKey(playKey)+'\nCanción: '+currentSong.title+' — '+currentSong.artist+'\nLetra con acordes:\n'+txt+'\n\nSugiere 3 reharmonizaciones (sustitutos de jazz) para los acordes principales y la escala para improvisar en cada sección.');
+  }catch(e){el.textContent='No se pudo usar la IA: '+e.message}
+}
+
+/* Buscar cifras en la web */
+function webSearch(site,q){
+  if(!q.trim()){alert('Escribe primero el título (y el artista).');return}
+  const dom=site==='cifraclub'?'cifraclub.com':'lacuerda.net';
+  window.open('https://www.google.com/search?q='+encodeURIComponent(q.trim()+' acordes site:'+dom),'_blank');
+}
+function searchWeb(site){webSearch(site,$('new-title').value+' '+$('new-artist').value)}
+function searchFromLibrary(site){webSearch(site,$('search-input').value)}
 
 /* Exportar */
 function exportSetlistPDF(){
@@ -437,4 +523,4 @@ renderSongs();paintTimer();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
-  </html>
+</html>
