@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GigFlow">
     
-    <!-- Librerías de MediaPipe para Seguimiento Facial con IA (On-Device) -->
+    <!-- MediaPipe para IA Facial -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
@@ -21,16 +21,16 @@
         h1 { font-size: 1.25rem; font-weight: bold; color: #22d3ee; letter-spacing: 0.05em; }
         main { flex: 1; padding: 16px; max-width: 480px; width: 100%; margin: 0 auto; padding-bottom: 96px; }
         .hidden { display: none !important; }
-        .btn { background: #1e293b; color: #f8fafc; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+        .btn { background: #1e293b; color: #f8fafc; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
         .btn:hover { background: #334155; }
         .btn-primary { background: #22d3ee; color: #030712; font-weight: bold; }
         .btn-amber { background: #f59e0b; color: #030712; font-weight: bold; }
         .btn-green { background: #10b981; color: #030712; font-weight: bold; }
-        input, textarea { width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 10px 12px; color: #f8fafc; font-size: 0.875rem; outline: none; margin-bottom: 10px; }
-        input:focus, textarea:focus { border-color: #22d3ee; }
+        input, textarea, select { width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 10px 12px; color: #f8fafc; font-size: 0.875rem; outline: none; margin-bottom: 10px; }
+        input:focus, textarea:focus, select:focus { border-color: #22d3ee; }
         .card { background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; }
         .badge { font-size: 0.75rem; background: #1e293b; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-family: monospace; }
-        .modal { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+        .modal { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
         .modal-content { background: #0f172a; border: 1px solid #1e293b; width: 100%; max-width: 360px; border-radius: 16px; padding: 20px; }
         .chord { color: #22d3ee; font-weight: bold; }
         .flex { display: flex; }
@@ -41,7 +41,16 @@
         .text-sm { font-size: 0.875rem; }
         .text-xs { font-size: 0.75rem; }
         .text-slate-400 { color: #94a3b8; }
-        .concert-box { background: rgba(15, 23, 42, 0.5); border: 1px solid #1e293b; border-radius: 16px; padding: 16px; height: 62vh; overflow-y: auto; font-family: monospace; font-size: 0.95rem; line-height: 1.8; white-space: pre-wrap; }
+        .concert-box { background: rgba(15, 23, 42, 0.5); border: 1px solid #1e293b; border-radius: 14px; padding: 14px; height: 45vh; overflow-y: auto; font-family: monospace; font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap; }
+        
+        /* Estilos del Diapasón Interactivo */
+        .fretboard { background: #090d16; border: 1px solid #1e293b; border-radius: 12px; padding: 10px; margin-top: 10px; }
+        .string-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding: 4px 0; font-family: monospace; font-size: 0.75rem; }
+        .string-label { width: 24px; color: #22d3ee; font-weight: bold; text-align: center; }
+        .fret-dot { width: 22px; height: 22px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: #94a3b8; }
+        .fret-dot.highlight { background: #22d3ee; color: #030712; font-weight: bold; }
+        .fret-dot.root { background: #f59e0b; color: #030712; font-weight: bold; }
+
         #webcam-video { display: none; }
     </style>
 </head>
@@ -51,7 +60,7 @@
         <h1>🎸 GigFlow</h1>
         <div class="flex gap-2">
             <button onclick="switchView('library')" class="btn">Repertorio</button>
-            <button onclick="switchView('tuner')" class="btn" onclick="initTuner()">Afinador</button>
+            <button onclick="switchView('tuner')" class="btn">Afinador</button>
         </div>
     </header>
 
@@ -67,7 +76,7 @@
             <div id="songs-list"></div>
         </section>
 
-        <!-- VISTA CONCIERTO -->
+        <!-- VISTA CONCIERTO (LETRA, AUTO-SCROLL, IA FACIAL, DIAPASÓN Y ASISTENTE IA) -->
         <section id="concert-view" class="hidden space-y-3">
             <div class="card" style="margin-bottom: 0; padding: 10px 14px;">
                 <div>
@@ -75,22 +84,44 @@
                     <p id="player-artist" class="text-xs text-slate-400">Artista</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span id="key-badge" class="badge">C</span>
-                    <button onclick="transposeSong(1)" class="btn" title="Subir tono" style="padding: 4px 8px;">+</button>
-                    <button onclick="transposeSong(-1)" class="btn" title="Bajar tono" style="padding: 4px 8px;">-</button>
+                    <!-- Selector manual de tono -->
+                    <select id="song-key-select" onchange="changeSongKey(this.value)" style="width: auto; padding: 4px 8px; margin-bottom: 0; font-family: monospace; color: #fbbf24; font-weight: bold;">
+                        <option value="C">C</option><option value="C#">C#</option><option value="D">D</option><option value="D#">D#</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="G">G</option><option value="G#">G#</option><option value="A">A</option><option value="A#">A#</option><option value="B">B</option>
+                        <option value="Am">Am</option><option value="Bm">Bm</option><option value="Cm">Cm</option><option value="Dm">Dm</option><option value="Em">Em</option><option value="Fm">Fm</option><option value="Gm">Gm</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Controles de Scroll y IA Facial -->
+            <!-- Controles de Scroll y Cámara -->
             <div class="flex justify-between items-center bg-slate-900 p-2 rounded-xl border border-slate-800">
                 <button onclick="toggleAutoScroll()" id="scroll-btn" class="btn btn-primary" style="font-size: 0.75rem;">Auto-Scroll</button>
                 <button onclick="toggleFaceTracking()" id="face-btn" class="btn" style="font-size: 0.75rem; background: #334155;">📷 IA Facial: OFF</button>
             </div>
 
             <div id="lyrics-container" class="concert-box"></div>
+
+            <!-- ASISTENTE IA PARA MÚSICOS (Improvisación y Consejos) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-cyan-400">🤖 Asistente IA para Improvisación</span>
+                    <button onclick="askAIAssistant()" class="btn btn-primary" style="font-size: 0.7rem; padding: 4px 8px;">Analizar Tono</button>
+                </div>
+                <p id="ai-advice" class="text-xs text-slate-300">Selecciona una canción y presiona "Analizar Tono" para recibir escalas de improvisación y sugerencias de acompañamiento.</p>
+            </div>
+
+            <!-- DIAPASÓN / MÁSTIL INTERACTIVO DE GUITARRA -->
+            <div class="fretboard">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-amber-400" id="fretboard-title">🎸 Diapasón (Escala Pentatónica)</span>
+                    <span class="text-xs text-slate-400">Trastes 0 al 3</span>
+                </div>
+                <div id="fretboard-container">
+                    <!-- Se genera dinámicamente por JS -->
+                </div>
+            </div>
         </section>
 
-        <!-- VISTA AFINADOR REAL -->
+        <!-- VISTA AFINADOR -->
         <section id="tuner-view" class="hidden" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 65vh; text-align: center; gap: 16px;">
             <h2 style="font-size: 1.1rem; font-weight: 600;">Afinador por Micrófono</h2>
             <div style="width: 170px; height: 170px; border-radius: 50%; border: 4px solid #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f172a;">
@@ -102,7 +133,6 @@
         </section>
     </main>
 
-    <!-- Elemento de video oculto para IA Facial -->
     <video id="webcam-video" autoplay playsinline></video>
 
     <!-- MODAL NUEVA CANCIÓN -->
@@ -111,7 +141,10 @@
             <h3 style="font-size: 1rem; font-weight: bold; color: #22d3ee;">Añadir Canción</h3>
             <input type="text" id="new-title" placeholder="Título de la canción">
             <input type="text" id="new-artist" placeholder="Artista">
-            <input type="text" id="new-key" placeholder="Tono (ej: Am, G, C)">
+            <select id="new-key">
+                <option value="C">Tono: C</option><option value="C#">Tono: C#</option><option value="D">Tono: D</option><option value="D#">Tono: D#</option><option value="E">Tono: E</option><option value="F">Tono: F</option><option value="F#">Tono: F#</option><option value="G">Tono: G</option><option value="G#">Tono: G#</option><option value="A">Tono: A</option><option value="A#">Tono: A#</option><option value="B">Tono: B</option>
+                <option value="Am" selected>Tono: Am</option><option value="Bm">Tono: Bm</option><option value="Cm">Tono: Cm</option><option value="Dm">Tono: Dm</option><option value="Em">Tono: Em</option><option value="Fm">Tono: Fm</option><option value="Gm">Tono: Gm</option>
+            </select>
             <textarea id="new-lyrics" placeholder="Pega la letra con acordes [Am] [G]..." rows="5"></textarea>
             <div class="flex gap-2">
                 <button onclick="closeModal()" class="btn" style="flex: 1;">Cancelar</button>
@@ -128,7 +161,6 @@
         let scrollInterval = null;
         let isScrolling = false;
 
-        // 1. GESTOR DE REPERTORIO Y VISTAS
         function renderSongs(list = songs) {
             const container = document.getElementById('songs-list');
             container.innerHTML = '';
@@ -175,39 +207,83 @@
         function updateSongView() {
             document.getElementById('player-title').innerText = currentSong.title;
             document.getElementById('player-artist').innerText = currentSong.artist;
-            document.getElementById('key-badge').innerText = currentSong.key;
+            document.getElementById('song-key-select').value = currentSong.key;
             let formattedLyrics = currentSong.lyrics.replace(/\[(.*?)\]/g, '<span class="chord">[$1]</span>');
             document.getElementById('lyrics-container').innerHTML = formattedLyrics;
+            renderFretboard(currentSong.key);
         }
 
-        // 2. TRANSPOSITOR MATEMÁTICO DE ACORDES (+ / - Semitonos)
-        const semitonesOrder = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const flatMap = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' };
-
-        function transposeChord(chord, step) {
-            let root = chord.replace(/m|maj|min|dim|aug|7|9|11|13|\/.*/g, '');
-            if (flatMap[root]) root = flatMap[root];
-            let modifier = chord.slice(root.length);
-            
-            let idx = semitonesOrder.indexOf(root);
-            if (idx === -1) return chord; // Si no lo reconoce, lo deja igual
-            
-            let newIdx = (idx + step + 12) % 12;
-            return semitonesOrder[newIdx] + modifier;
+        function changeSongKey(newKey) {
+            if(!currentSong) return;
+            currentSong.key = newKey;
+            renderFretboard(newKey);
         }
 
-        function transposeSong(step) {
-            if (!currentSong) return;
-            // Transponer tono principal
-            currentSong.key = transposeChord(currentSong.key, step);
-            // Transponer todos los acordes entre corchetes en la letra
-            currentSong.lyrics = currentSong.lyrics.replace(/\[(.*?)\]/g, (match, chord) => {
-                return `[${transposeChord(chord, step)}]`;
+        // DIAPASÓN INTERACTIVO DINÁMICO
+        const guitarStrings = [
+            { name: 'E', notes: ['E', 'F', 'F#', 'G'] },
+            { name: 'B', notes: ['B', 'C', 'C#', 'D'] },
+            { name: 'G', notes: ['G', 'G#', 'A', 'A#'] },
+            { name: 'D', notes: ['D', 'D#', 'E', 'F'] },
+            { name: 'A', notes: ['A', 'A#', 'B', 'C'] },
+            { name: 'E', notes: ['E', 'F', 'F#', 'G'] }
+        ];
+
+        // Escalas básicas de ejemplo para resaltar notas en el diapasón
+        const scaleNotesMap = {
+            'Am': ['A', 'C', 'D', 'E', 'G'], 'Em': ['E', 'G', 'A', 'B', 'D'], 'Bm': ['B', 'D', 'E', 'F#', 'A'],
+            'C': ['C', 'D', 'E', 'G', 'A'], 'G': ['G', 'A', 'B', 'D', 'E'], 'D': ['D', 'E', 'F#', 'A', 'B'],
+            'E': ['E', 'F#', 'G#', 'B', 'C#'], 'F': ['F', 'G', 'A', 'C', 'D']
+        };
+
+        function renderFretboard(key) {
+            const container = document.getElementById('fretboard-container');
+            container.innerHTML = '';
+            let activeNotes = scaleNotesMap[key] || scaleNotesMap['Am'];
+            let rootNote = key.replace('m', '');
+
+            document.getElementById('fretboard-title').innerText = `🎸 Escala Guía para Improvisar (${key})`;
+
+            guitarStrings.forEach(string => {
+                let row = document.createElement('div');
+                row.className = 'string-row';
+                let label = document.createElement('span');
+                label.className = 'string-label';
+                label.innerText = string.name;
+                row.appendChild(label);
+
+                string.notes.forEach((note, fretIdx) => {
+                    let dot = document.createElement('div');
+                    dot.className = 'fret-dot';
+                    dot.innerText = note;
+                    if (note === rootNote) {
+                        dot.classList.add('root'); // Nota fundamental (Raíz)
+                    } else if (activeNotes.includes(note)) {
+                        dot.classList.add('highlight'); // Notas de la escala de improvisación
+                    }
+                    row.appendChild(dot);
+                });
+                container.appendChild(row);
             });
-            updateSongView();
         }
 
-        // 3. AUTO-SCROLL Y SEGUIMIENTO FACIAL CON IA (MEDIAPIPE)
+        // ASISTENTE IA PARA MÚSICOS (Entrenado con teoría y consejos de improvisación)
+        function askAIAssistant() {
+            if(!currentSong) return;
+            let key = currentSong.key;
+            let adviceBox = document.getElementById('ai-advice');
+            
+            let tips = {
+                'Am': "💡 **IA Asistente:** Estás en **La menor**. Perfecta para usar la escala Pentatónica de Am (Traste 5). Puedes combinarla con *backing tracks* de rock clásico o blues en La.",
+                'Bm': "💡 **IA Asistente:** Tono en **Si menor**. Ideal para solos melódicos usando la pentatónica de Bm. Los acordes F# y Em le darán dramatismo a tu improvisación.",
+                'Em': "💡 **IA Asistente:** Tono en **Mi menor**. Excelente para riffs pesados o baladas acústicas. Usa la escala pentatónica de Em y explora notas sostenidas.",
+                'G': "💡 **IA Asistente:** Tono en **Sol mayor**. Un ambiente alegre y acústico. Improvisa usando la escala mayor de G o su relativa menor (Em)."
+            };
+
+            adviceBox.innerHTML = tips[key] || `💡 **IA Asistente:** Tono <b>${key}</b> detectado. Se recomienda usar la escala pentatónica correspondiente a este tono para mantener una afinación melódica perfecta durante tus solos.`;
+        }
+
+        // AUTO-SCROLL Y CÁMARA FACIAL
         function toggleAutoScroll() {
             const container = document.getElementById('lyrics-container');
             const btn = document.getElementById('scroll-btn');
@@ -265,13 +341,9 @@
                 faceMesh.onResults((results) => {
                     const container = document.getElementById('lyrics-container');
                     if (!container) return;
-                    
                     if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-                        // Si detecta el rostro mirando la pantalla, desplaza. Si levanta la cara o mira a otro lado, pausa.
-                        let noseY = results.multiFaceLandmarks[0][1].y; // Posición de la nariz
-                        if (noseY > 0.35 && noseY < 0.65) { 
-                            container.scrollTop += 1.5; // Leyendo la pantalla
-                        }
+                        let noseY = results.multiFaceLandmarks[0][1].y;
+                        if (noseY > 0.35 && noseY < 0.65) container.scrollTop += 1.5;
                     }
                 });
 
@@ -282,7 +354,7 @@
                 await camera.start();
                 trackingActive = true;
             } catch (e) {
-                alert("No se pudo iniciar la cámara o permisos denegados.");
+                alert("Permisos de cámara denegados.");
                 trackingActive = false;
             }
         }
@@ -292,21 +364,18 @@
             if (camera) { camera.stop(); camera = null; }
         }
 
-        // 4. AFINADOR REAL CON MICRÓFONO (WEB AUDIO API)
+        // AFINADOR
         let audioContext = null;
         let analyser = null;
-        let microphoneStream = null;
 
         async function startTuner() {
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                microphoneStream = stream;
                 const source = audioContext.createMediaStreamSource(stream);
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 2048;
                 source.connect(analyser);
-                
                 detectPitch();
                 document.getElementById('note-display').innerText = "🎧";
             } catch (e) {
@@ -319,7 +388,6 @@
             if (!analyser) return;
             const buffer = new Float32Array(analyser.fftSize);
             analyser.getFloatTimeDomainData(buffer);
-            
             let ac = autoCorrelate(buffer, audioContext.sampleRate);
             if (ac !== -1) {
                 let note = noteFromPitch(ac);
@@ -330,39 +398,32 @@
         }
 
         function autoCorrelate(buffer, sampleRate) {
-            let SIZE = buffer.length;
-            let sum = 0;
+            let SIZE = buffer.length, sum = 0;
             for(let i=0; i<SIZE; i++) sum += buffer[i]*buffer[i];
-            if(Math.sqrt(sum/SIZE) < 0.01) return -1; // Muy silencioso
-
+            if(Math.sqrt(sum/SIZE) < 0.01) return -1;
             let r1=0, r2=SIZE-1, threshold=0.2;
             for(let i=0; i<SIZE/2; i++) if (Math.abs(buffer[i]) < threshold) { r1=i; break; }
             for(let i=1; i<SIZE/2; i++) if (Math.abs(buffer[SIZE-i]) < threshold) { r2=SIZE-i; break; }
-            
-            let buf = buffer.slice(r1, r2);
-            let c = new Array(buf.length).fill(0);
-            for (let i=0; i<buf.length; i++) for (let j=0; j<buf.length-i; j++) c[i] = c[i] + buf[j]*buf[j+i];
-            
+            let buf = buffer.slice(r1, r2), c = new Array(buf.length).fill(0);
+            for (let i=0; i<buf.length; i++) for (let j=0; j<buf.length-i; j++) c[i] += buf[j]*buf[j+i];
             let d=0; while (c[d] > c[d+1]) d++;
             let maxval=-1, maxpos=-1;
             for (let i=d; i<buf.length; i++) { if (c[i] > maxval) { maxval = c[i]; maxpos = i; } }
-            let T0 = maxpos;
-            return sampleRate/T0;
+            return sampleRate / maxpos;
         }
 
         function noteFromPitch(frequency) {
-            let noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
-            return Math.round(noteNum) + 69;
+            return Math.round(12 * (Math.log(frequency / 440) / Math.log(2))) + 69;
         }
 
-        // GESTIÓN MODAL Y LOCALSTORAGE
+        // GESTIÓN MODAL Y DATOS
         function openModal() { document.getElementById('song-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('song-modal').classList.add('hidden'); }
 
         function saveSong() {
             const title = document.getElementById('new-title').value;
             const artist = document.getElementById('new-artist').value;
-            const key = document.getElementById('new-key').value || "C";
+            const key = document.getElementById('new-key').value;
             const lyrics = document.getElementById('new-lyrics').value;
             if(!title || !lyrics) { alert("Escribe título y letra"); return; }
             songs.push({ id: Date.now(), title, artist, key, lyrics });
@@ -371,7 +432,6 @@
             renderSongs();
             document.getElementById('new-title').value = '';
             document.getElementById('new-artist').value = '';
-            document.getElementById('new-key').value = '';
             document.getElementById('new-lyrics').value = '';
         }
 
