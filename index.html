@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GigFlow - App para Músicos</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#030712">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GigFlow">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #030712; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; -webkit-user-select: none; user-select: none; }
+        header { background-color: #0f172a; border-bottom: 1px solid #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+        h1 { font-size: 1.25rem; font-weight: bold; color: #22d3ee; letter-spacing: 0.05em; }
+        main { flex: 1; padding: 16px; max-width: 480px; width: 100%; margin: 0 auto; padding-bottom: 96px; }
+        .hidden { display: none !important; }
+        .btn { background: #1e293b; color: #f8fafc; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; }
+        .btn:hover { background: #334155; }
+        .btn-primary { background: #22d3ee; color: #030712; font-weight: bold; }
+        .btn-amber { background: #f59e0b; color: #030712; font-weight: bold; }
+        input, textarea { width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 10px 12px; color: #f8fafc; font-size: 0.875rem; outline: none; margin-bottom: 10px; }
+        input:focus, textarea:focus { border-color: #22d3ee; }
+        .card { background: #0f172a; border: 1px solid #1e293b; padding: 14px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; cursor: pointer; }
+        .card:hover { border-color: rgba(34, 211, 238, 0.5); }
+        .badge { font-size: 0.75rem; background: #1e293b; color: #fbbf24; padding: 4px 8px; border-radius: 6px; font-family: monospace; }
+        .modal { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+        .modal-content { background: #0f172a; border: 1px solid #1e293b; width: 100%; max-width: 360px; border-radius: 16px; padding: 20px; }
+        .chord { color: #22d3ee; font-weight: bold; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 8px; }
+        .space-y-4 > * + * { margin-top: 16px; }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-slate-400 { color: #94a3b8; }
+        .text-slate-200 { color: #e2e8f0; }
+        .font-bold { font-weight: bold; }
+        .concert-box { background: rgba(15, 23, 42, 0.5); border: 1px solid #1e293b; border-radius: 16px; padding: 16px; height: 70vh; overflow-y: auto; font-family: monospace; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎸 GigFlow</h1>
+        <div class="flex gap-2">
+            <button onclick="switchView('library')" class="btn">Repertorio</button>
+            <button onclick="switchView('tuner')" class="btn">Afinador</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- VISTA REPERTORIO -->
+        <section id="library-view" class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 style="font-size: 1.1rem; font-weight: 600;">Mis Canciones</h2>
+                <button onclick="openModal()" class="btn btn-primary">+ Nueva</button>
+            </div>
+            
+            <input type="text" id="search-input" placeholder="Buscar por título o artista..." oninput="filterSongs()">
+
+            <div id="songs-list"></div>
+        </section>
+
+        <!-- VISTA CONCIERTO -->
+        <section id="concert-view" class="hidden space-y-4">
+            <div class="card" style="margin-bottom: 0;">
+                <div>
+                    <h3 id="player-title" style="font-size: 0.95rem; font-weight: bold; color: #22d3ee;">Título</h3>
+                    <p id="player-artist" class="text-xs text-slate-400">Artista</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="key-badge" class="badge">Tono: C</span>
+                    <button onclick="toggleAutoScroll()" id="scroll-btn" class="btn btn-primary" style="font-size: 0.75rem; padding: 6px 10px;">Auto-Scroll</button>
+                </div>
+            </div>
+
+            <div id="lyrics-container" class="concert-box"></div>
+        </section>
+
+        <!-- VISTA AFINADOR -->
+        <section id="tuner-view" class="hidden" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; text-align: center; gap: 20px;">
+            <h2 style="font-size: 1.1rem; font-weight: 600;">Afinador</h2>
+            <div style="width: 170px; height: 170px; border-radius: 50%; border: 4px solid #1e293b; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f172a;">
+                <span id="note-display" style="font-size: 3.5rem; font-weight: 900; color: #22d3ee;">-</span>
+                <span id="hz-display" class="text-xs text-slate-400">0.0 Hz</span>
+            </div>
+            <p class="text-xs text-slate-400" style="padding: 0 20px;">Toca una cuerda cerca del micrófono para detectar la nota.</p>
+        </section>
+    </main>
+
+    <!-- MODAL NUEVA CANCIÓN -->
+    <div id="song-modal" class="modal hidden">
+        <div class="modal-content space-y-4">
+            <h3 style="font-size: 1rem; font-weight: bold; color: #22d3ee;">Añadir Canción</h3>
+            <input type="text" id="new-title" placeholder="Título de la canción">
+            <input type="text" id="new-artist" placeholder="Artista">
+            <input type="text" id="new-key" placeholder="Tono (ej: Am, G, C)">
+            <textarea id="new-lyrics" placeholder="Pega la letra con acordes [Am] [G]..." rows="5"></textarea>
+            <div class="flex gap-2">
+                <button onclick="closeModal()" class="btn" style="flex: 1;">Cancelar</button>
+                <button onclick="saveSong()" class="btn btn-primary" style="flex: 1;">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let songs = JSON.parse(localStorage.getItem('gigflow_songs')) || [
+            { id: 1, title: "Hotel California", artist: "Eagles", key: "Bm", lyrics: "[Bm]On a dark desert highway [F#]Cool wind in my hair\n[A]Warm smell of colitas [E]Rising up through the air..." }
+        ];
+        let scrollInterval = null;
+        let isScrolling = false;
+
+        function renderSongs(list = songs) {
+            const container = document.getElementById('songs-list');
+            container.innerHTML = '';
+            if(list.length === 0) {
+                container.innerHTML = '<p style="text-align: center; font-size: 0.8rem; color: #64748b; padding: 32px 0;">No hay canciones guardadas.</p>';
+                return;
+            }
+            list.forEach(song => {
+                container.innerHTML += `
+                    <div onclick="openSong(${song.id})" class="card">
+                        <div>
+                            <h4 style="font-size: 0.9rem; font-weight: bold; color: #e2e8f0;">${song.title}</h4>
+                            <p class="text-xs text-slate-400">${song.artist}</p>
+                        </div>
+                        <span class="badge">${song.key}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function switchView(view) {
+            document.getElementById('library-view').classList.add('hidden');
+            document.getElementById('concert-view').classList.add('hidden');
+            document.getElementById('tuner-view').classList.add('hidden');
+            stopAutoScroll();
+
+            if(view === 'library') document.getElementById('library-view').classList.remove('hidden');
+            if(view === 'concert') document.getElementById('concert-view').classList.remove('hidden');
+            if(view === 'tuner') {
+                const tv = document.getElementById('tuner-view');
+                tv.classList.remove('hidden');
+                tv.style.display = 'flex';
+            }
+        }
+
+        function openSong(id) {
+            const song = songs.find(s => s.id === id);
+            if(!song) return;
+            document.getElementById('player-title').innerText = song.title;
+            document.getElementById('player-artist').innerText = song.artist;
+            document.getElementById('key-badge').innerText = `Tono: ${song.key}`;
+            let formattedLyrics = song.lyrics.replace(/\[(.*?)\]/g, '<span class="chord">[$1]</span>');
+            document.getElementById('lyrics-container').innerHTML = formattedLyrics;
+            switchView('concert');
+        }
+
+        function toggleAutoScroll() {
+            const container = document.getElementById('lyrics-container');
+            const btn = document.getElementById('scroll-btn');
+            if (isScrolling) {
+                stopAutoScroll();
+            } else {
+                isScrolling = true;
+                btn.innerText = "Pausar";
+                btn.className = "btn btn-amber";
+                scrollInterval = setInterval(() => {
+                    container.scrollTop += 1;
+                    if (container.scrollTop + container.clientHeight >= container.scrollHeight) stopAutoScroll();
+                }, 50);
+            }
+        }
+
+        function stopAutoScroll() {
+            isScrolling = false;
+            clearInterval(scrollInterval);
+            const btn = document.getElementById('scroll-btn');
+            if(btn) {
+                btn.innerText = "Auto-Scroll";
+                btn.className = "btn btn-primary";
+            }
+        }
+
+        function openModal() { document.getElementById('song-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('song-modal').classList.add('hidden'); }
+
+        function saveSong() {
+            const title = document.getElementById('new-title').value;
+            const artist = document.getElementById('new-artist').value;
+            const key = document.getElementById('new-key').value || "C";
+            const lyrics = document.getElementById('new-lyrics').value;
+            if(!title || !lyrics) { alert("Escribe título y letra"); return; }
+            songs.push({ id: Date.now(), title, artist, key, lyrics });
+            localStorage.setItem('gigflow_songs', JSON.stringify(songs));
+            closeModal();
+            renderSongs();
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-artist').value = '';
+            document.getElementById('new-key').value = '';
+            document.getElementById('new-lyrics').value = '';
+        }
+
+        function filterSongs() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            renderSongs(songs.filter(s => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)));
+        }
+
+        renderSongs();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+                  </html>
